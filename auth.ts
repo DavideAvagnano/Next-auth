@@ -25,14 +25,12 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       // Allow OAuth without email verification
       if (account?.provider !== "credentials") return true;
 
-      // (typescript error on user.id, could be undefined)
       if (user.id) {
         const existingUser = await getUserById(user.id);
 
-        // email verified control
+        // Prevent sign in without email verification
         if (!existingUser?.emailVerified) return false;
 
-        // 2FA control
         if (existingUser.isTwoFactorEnabled) {
           const twoFactorConfirmation = await getTwoFactorConfirmationByUserId(
             existingUser.id
@@ -40,7 +38,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
 
           if (!twoFactorConfirmation) return false;
 
-          // Delete 2FA for next sign in
+          // Delete two factor confirmation for next sign in
           await db.twoFactorConfirmation.delete({
             where: { id: twoFactorConfirmation.id },
           });
